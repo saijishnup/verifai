@@ -1,11 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="VerifAI logo: a page with a red margin mark">
-  <rect x="18" y="10" width="60" height="76" rx="8" fill="#fbfaf9" stroke="#1c1b19" stroke-opacity="0.18" stroke-width="2"/>
-  <rect x="26" y="22" width="4" height="52" rx="2" fill="#c2410c"/>
-  <g fill="#1c1b19" fill-opacity="0.22">
-    <rect x="36" y="24" width="32" height="4" rx="2"/>
-    <rect x="36" y="34" width="26" height="4" rx="2"/>
-    <rect x="36" y="44" width="30" height="4" rx="2"/>
-    <rect x="36" y="54" width="22" height="4" rx="2"/>
-    <rect x="36" y="64" width="28" height="4" rx="2"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="195" height="80" viewBox="0 0 195 80" role="img" aria-label="VerifAI">
+  <style>
+    .ink { fill: #1c1b19; } .rule { stroke: #1c1b19; }
+    @media (prefers-color-scheme: dark) { .ink { fill: #e6e1d9; } .rule { stroke: #e6e1d9; } }
+  </style>
+  <g class="rule" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 14 H12 V66 H22"/>
+    <path d="M183 14 H193 V66 H183"/>
+  </g>
+  <path class="ink" d="M38.83 50 30.64 27.28H34.32L41.01 46.16L47.7 27.28H51.38L43.15 50ZM61.42 50.38Q58.93 50.38 57.12 49.3Q55.31 48.21 54.34 46.19Q53.36 44.18 53.36 41.49Q53.36 38.8 54.34 36.8Q55.31 34.8 57.1 33.7Q58.9 32.59 61.33 32.59Q63.63 32.59 65.39 33.66Q67.15 34.74 68.13 36.75Q69.1 38.77 69.1 41.62V42.48H56.88Q57.01 44.98 58.21 46.22Q59.41 47.47 61.46 47.47Q62.96 47.47 63.95 46.77Q64.94 46.06 65.33 44.88L68.85 45.1Q68.18 47.47 66.21 48.93Q64.24 50.38 61.42 50.38ZM56.88 39.92H65.52Q65.36 37.65 64.22 36.56Q63.09 35.47 61.33 35.47Q59.5 35.47 58.34 36.61Q57.17 37.74 56.88 39.92ZM72.85 50V32.98H75.95L76.08 37.49L75.79 37.39Q76.14 35.09 77.22 34.03Q78.29 32.98 80.11 32.98H81.74V36.02H80.11Q78.83 36.02 77.97 36.43Q77.1 36.85 76.67 37.71Q76.24 38.58 76.24 39.95V50ZM85.46 50V32.98H88.85V50ZM85.39 30.51V27.12H88.91V30.51ZM95.38 50V31.89Q95.38 29.78 96.56 28.53Q97.74 27.28 100.24 27.28H103.28V30.06H100.72Q99.73 30.06 99.25 30.59Q98.77 31.12 98.77 32.08V50ZM93.01 35.76V32.98H103.02V35.76Z"/>
+  <path fill="#c2410c" d="M105.07 50 113.26 27.28H117.65L125.84 50H122.16L120.08 44.08H110.8L108.75 50ZM111.89 40.94H119.02L115.44 30.58ZM129.23 50V27.28H132.69V50Z"/>
+  <g fill="none" stroke="#c2410c" stroke-linecap="round">
+    <circle cx="155.4" cy="36" r="13" stroke-width="5"/>
+    <path d="M165.4 46 L175.4 56" stroke-width="6"/>
   </g>
 </svg>

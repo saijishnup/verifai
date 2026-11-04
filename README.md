@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="VerifAI logo: a page with a red margin mark" width="96" />
+  <img src="assets/logo.svg" alt="VerifAI" width="270" />
 </p>
 
 # VerifAI
