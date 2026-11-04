@@ -17,58 +17,56 @@
 
 ## What it is
 
-VerifAI checks an academic report for passages an AI-text detector would flag, before you hand it in. Drop in a PDF and it scores the whole report, each section and each passage, then marks the text in the margin the way an examiner marks a draft.
-
-It runs on your own laptop. The PDF never leaves it.
+Checks a PDF report for passages an AI-text detector would flag, before you submit. Scores the whole report, each section and each passage, and marks them in the margin. Runs on your laptop; the PDF never leaves it.
 
 ## Features
 
-- **Two detectors, one switch.** Desklib's academic detector and GPTTrace score every passage. Flip between them and every chart follows; a line under the score says whether they agree.
-- **Margin heatmap.** Each passage gets a thin vertical mark tinted by its score. Flagged passages get a light wash and a Copy button, so you can rewrite and paste back to re-check.
-- **Section bars.** Abstract, Introduction, Literature Review and so on, ranked by score. Click one to jump to it.
-- **Document map.** One cell per passage, sized by length, from page 1 to the end.
-- **Where the words fall.** One bar: how much of the text scores low, borderline or high.
-- **Sentence rhythm.** Words per sentence for each section, as dots. Flat rhythm often reads as machine-written. Plain statistics, not used by either model.
-- **Threshold slider.** Change the flag line from 0.05 to 0.95; everything re-tints instantly, no re-run.
-- **Live results.** Passages fill in as they are scored, with a timer.
-- **Paste mode.** Check a single paragraph without a PDF.
-- **Honest cleanup.** Figure labels, table cells, captions, page numbers, the title block and the reference list are dropped before scoring. A "Show skipped" list lets you check what was removed.
+- **Two detectors.** Desklib academic and GPTTrace. One switch flips every chart; a line says if they agree.
+- **Margin heatmap.** Each passage gets a mark tinted by score. Flagged ones get a Copy button to rewrite and re-check.
+- **Section bars.** Sections ranked by score. Click to jump.
+- **Document map.** One cell per passage, start to end.
+- **Word split.** Share of text scoring low, borderline, high.
+- **Sentence rhythm.** Words per sentence per section. Flat rhythm often reads as AI. Plain stats, not the model.
+- **Threshold slider.** 0.05 to 0.95, re-tints instantly.
+- **Live results.** Passages fill in as scored.
+- **Paste mode.** Check one paragraph, no PDF.
+- **Cleanup.** Drops tables, figure labels, captions, page numbers, title block and references. "Show skipped" lists what went.
 
 ## How it scores
 
 ```
 PDF ──► extract text (pypdf)
     ──► drop tables, figure labels, captions, references, title block
-    ──► split by section (1 Introduction, 2 …), pack sentences into passages of ≤ 700 tokens
+    ──► split by section, pack sentences into passages of ≤ 700 tokens
     ──► score each passage with both detectors
-    ──► section and overall scores = token-weighted averages
+    ──► section and overall = token-weighted averages
 ```
 
 | | Desklib academic | GPTTrace (optional) |
 |---|---|---|
 | Model | [desklib/ai-text-detector-academic-v1.01](https://huggingface.co/desklib/ai-text-detector-academic-v1.01) | [nakas/gpttrace-ettin150-text-v5e](https://huggingface.co/nakas/gpttrace-ettin150-text-v5e) |
-| Base | DeBERTa-v3-large, 435M params | Ettin encoder, 150M params, int8 ONNX |
-| Tuned for | Academic writing | General text, robust to paraphrase attacks |
+| Base | DeBERTa-v3-large, 435M | Ettin encoder, 150M, int8 ONNX |
+| Tuned for | Academic writing | General text, paraphrase attacks |
 | [RAID](https://raid-bench.xyz) accuracy* | not submitted (general sibling: 91.2%) | 99.8% |
 | Download | 1.74 GB | 155 MB |
-| RAM while running | about 1.9 GB | about 0.3 GB |
+| RAM | ~1.9 GB | ~0.3 GB |
 | Licence | MIT | CC BY-SA 4.0 |
 
-*RAID: share of AI text caught at a 5% false-positive rate, all attacks included. Most top entries trained on RAID's own training data, so real-world accuracy is lower.
+*AI text caught at 5% false positives, all attacks. Most top entries trained on RAID data; real-world accuracy is lower.
 
-**Memory trick.** Desklib's 128k-word embedding table is a lookup, not maths, so VerifAI stores it in bf16 and hands fp32 to the rest of the model. That saves about 0.3 GB with a measured score change of 0.0001. Full bf16 was 8× slower on a laptop CPU without bf16 units, and int8 quantisation broke the model (every passage scored about 0.99), so neither is used.
+**Memory.** Desklib's 128k-word embedding table is stored in bf16, the rest in fp32: −0.3 GB, score change 0.0001. Full bf16 was 8× slower on CPU; int8 broke the model (everything ~0.99).
 
-### Measured on a 17-page course report
+### Measured on a 17-page report
 
-| | Desklib academic | GPTTrace |
+| | Desklib | GPTTrace |
 |---|---|---|
 | Whole report | 4.3% | 0.1% |
-| A deliberately AI-style paragraph | 100% | 100% |
-| Run time, both models (Intel i5-1245U) | 41–86 s | |
+| AI-style test paragraph | 100% | 100% |
+| Run time, both (i5-1245U) | 41–86 s | |
 
 ## Run it locally
 
-You need Python 3.12 or newer and about 4 GB of free disk space.
+Needs Python 3.12+ and ~4 GB disk.
 
 ```bash
 git clone https://github.com/saijishnup/verifai.git
@@ -78,65 +76,59 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Download the models into `models/` (about 1.9 GB, once):
+Download models (~1.9 GB, once):
 
 ```bash
 hf download desklib/ai-text-detector-academic-v1.01 --local-dir models/academic-v1.01
 hf download nakas/gpttrace-ettin150-text-v5e --local-dir models/gpttrace-150m
 ```
 
-The second line is optional. Without it, VerifAI runs with Desklib only. If you skip the first line too, Desklib downloads itself on the first run.
-
-Start it:
+Second line optional: without it, Desklib only. Skip both and Desklib downloads on first run.
 
 ```bash
 python app.py
 ```
 
-Your browser opens at http://127.0.0.1:8000. The model takes 15–30 seconds to load; the upload button unlocks when it is ready.
+Opens http://127.0.0.1:8000. Model loads in 15–30 s; upload unlocks when ready.
 
-| Option | What it does |
+| Option | Does |
 |---|---|
-| `--fp32` | Keeps Desklib fully in fp32 (exact model-card precision, about 0.35 GB more RAM) |
-| `--port 8001` | Runs on another port |
-| `--no-browser` | Does not open a browser tab |
-| `--selftest` | Checks the text pipeline without loading any model |
-
-### Files
+| `--fp32` | Full fp32 Desklib (+0.35 GB RAM) |
+| `--port 8001` | Another port |
+| `--no-browser` | No browser tab |
+| `--selftest` | Test the text pipeline, no model |
 
 ```
 verifai/
-  app.py             server, PDF cleanup, both detectors (Python standard library server)
-  index.html         the whole interface, plain HTML/CSS/JS
+  app.py             server, cleanup, both detectors
+  index.html         interface, plain HTML/CSS/JS
   requirements.txt   torch (CPU), transformers, sentencepiece, pypdf, onnxruntime
   models/            downloaded models, not in git
 ```
 
 ## What the score means
 
-The score is **AI-likelihood from a detector**, not proof of who wrote the text.
+AI-likelihood from a detector, not proof of authorship.
 
-- A low score means the detector found nothing it recognises as AI-style. It does not prove no AI was used: lightly edited or paraphrased AI text often scores low too.
-- Formal, uniform technical prose can score high even when a person wrote it.
-- Two detectors agreeing is stronger evidence than one. When they disagree, VerifAI says so.
-- Independent studies show commercial detectors flagging 9–15% of real human-written abstracts. No detector score should be used on its own to accuse anyone.
+- Low score: no AI style found. Edited or paraphrased AI text can also score low.
+- Formal technical prose can score high even when human-written.
+- Two detectors agreeing beats one. VerifAI flags disagreement.
+- Studies show commercial detectors flag 9–15% of real human abstracts. Never use a score alone to accuse anyone.
 
 ## Privacy
 
-Everything runs on your machine. The server listens on 127.0.0.1 only, so other devices on your network cannot reach it. PDFs are read in memory and never saved. There are no accounts, cookies or analytics. The only network requests are the one-time model downloads from Hugging Face and the interface fonts from Google Fonts.
+Runs on 127.0.0.1 only. PDFs are read in memory, never saved. No accounts, cookies or analytics. Network use: one-time model downloads (Hugging Face) and fonts (Google Fonts).
 
 ## Delete everything
 
-The models, packages and code all live in the project folder. Close VerifAI with Ctrl+C, then delete the folder to free about 3.5 GB.
+Stop with Ctrl+C, delete the folder. Frees ~3.5 GB.
 
 ## Credits
 
-- [Desklib](https://huggingface.co/desklib) for the academic detector
-- [GPTTrace by nakas](https://huggingface.co/nakas/gpttrace-ettin150-text-v5e) for the second detector and its text normaliser
-- [RAID benchmark](https://github.com/liamdugan/raid) for public, comparable detector scores
+[Desklib](https://huggingface.co/desklib) · [GPTTrace by nakas](https://huggingface.co/nakas/gpttrace-ettin150-text-v5e) · [RAID benchmark](https://github.com/liamdugan/raid)
 
 ## License
 
-[MIT](LICENSE) © 2026 Sai Jishnu P. The models keep their own licences (Desklib: MIT, GPTTrace: CC BY-SA 4.0); they are downloaded from Hugging Face, not redistributed here.
+[MIT](LICENSE) © 2026 Sai Jishnu P. Models keep their own licences (Desklib MIT, GPTTrace CC BY-SA 4.0) and download from Hugging Face; not redistributed here.
 
 VerifAI is a second reader, not a judge.
