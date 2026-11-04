@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VerifAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f5f3; --surface: #fff; --side: #fbfaf9; --sunk: #efeeeb;
+    --line: rgba(28,27,25,.08); --line-2: rgba(28,27,25,.14);
+    --text: #1c1b19; --text-2: #5c5a55; --text-3: #8d8a84;
+    --ink: #c2410c; --ink-dark: #9a330a; --ok: #4d7c0f; --err: #b91c1c;
+    --ease: cubic-bezier(.16,1,.3,1);
+    --sans: "Geist", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+    --mono: "Geist Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: var(--bg); }
+  body { color: var(--text); font: 400 15px/1.6 var(--sans); min-height: 100dvh; display: flex; flex-direction: column; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+  [hidden] { display: none !important; }
+
+  .bar { height: 48px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; z-index: 2; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+  .brand i { width: 4px; height: 20px; border-radius: 2px; background: var(--ink); }
+  .bar-right { display: flex; align-items: center; gap: 16px; font: 400 12px var(--mono); color: var(--text-3); }
+  .dot { width: 6px; height: 6px; border-radius: 3px; background: var(--text-3); display: inline-block; margin-right: 6px; vertical-align: 1px; }
+  .dot.ready { background: var(--ok); } .dot.error { background: var(--err); }
+
+  .btn { font: 500 13px var(--sans); height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background-color .2s var(--ease), transform .1s var(--ease); }
+  .btn:hover { background: var(--sunk); }
+  .btn:active { transform: scale(.98); }
+  .btn.primary { background: var(--text); color: #f6f5f3; border-color: var(--text); }
+  .btn.primary:hover { background: #33312e; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+  /* empty */
+  .start { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; max-width: 1120px; width: 100%; margin: 0 auto; padding: 80px 32px; align-items: start; }
+  .start h1 { font-size: 32px; line-height: 1.15; font-weight: 500; letter-spacing: -.02em; max-width: 16ch; }
+  .start .lede { margin-top: 16px; color: var(--text-2); max-width: 44ch; }
+  .start ul { margin-top: 24px; padding-left: 18px; color: var(--text-2); font-size: 14px; display: grid; gap: 4px; }
+  .drop { border: 1px dashed rgba(28,27,25,.28); border-radius: 16px; padding: 40px 28px; display: grid; gap: 12px; justify-items: start; background: var(--surface); transition: background-color .2s var(--ease), border-color .2s var(--ease); }
+  .drop.over { background: #fdf6f2; border-color: var(--ink); }
+  .drop .big { font-size: 18px; font-weight: 500; }
+  .drop p { font-size: 13px; color: var(--text-2); }
+  .paste { margin-top: 24px; display: grid; gap: 8px; }
+  .paste label { font-size: 13px; color: var(--text-2); }
+  textarea { width: 100%; min-height: 120px; resize: vertical; border: 1px solid var(--line-2); border-radius: 8px; padding: 10px 12px; font: 400 14px/1.6 var(--sans); color: var(--text); background: var(--surface); }
+  .err { border-left: 3px solid var(--err); padding: 8px 12px; font-size: 13px; color: #7f1d1d; background: #fbf1f0; border-radius: 0 8px 8px 0; }
+
+  /* results */
+  .app { flex: 1; display: grid; grid-template-columns: 320px minmax(0, 1fr); max-width: 1440px; width: 100%; margin: 0 auto; background: var(--surface); border-inline: 1px solid var(--line); }
+  .side { border-right: 1px solid var(--line); padding: 28px 24px 40px; display: flex; flex-direction: column; gap: 32px; background: var(--side); }
+  .label { font-size: 13px; color: var(--text-3); }
+  .score { font: 500 56px/1 var(--sans); letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin-top: 8px; }
+  .score small { font-size: 24px; color: var(--text-3); font-weight: 400; margin-left: 2px; }
+  .verdict { margin-top: 12px; font-size: 14px; color: var(--text-2); }
+  .gauge { margin-top: 16px; height: 6px; border-radius: 3px; background: var(--sunk); position: relative; }
+  .gauge i { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--ink); transition: width .4s var(--ease); }
+  .gauge b { position: absolute; top: -4px; width: 1px; height: 14px; background: var(--text-3); }
+  .legend3 { display: flex; justify-content: space-between; margin-top: 8px; font: 400 11px var(--mono); color: var(--text-3); }
+  .split { display: flex; height: 10px; border-radius: 3px; overflow: hidden; margin-top: 12px; gap: 2px; background: var(--sunk); }
+  .split i { display: block; height: 100%; transition: flex-grow .4s var(--ease); }
+  .split .lo { background: #d9d6d0; } .split .mid { background: #a8a49c; } .split .hi { background: var(--ink); }
+  .split-legend { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--text-2); }
+  .split-legend b { font: 500 13px var(--sans); color: var(--text); font-variant-numeric: tabular-nums; display: block; }
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; }
+  .facts div { font: 500 16px var(--sans); font-variant-numeric: tabular-nums; }
+  .facts b { font-weight: 500; }
+  .facts span { display: block; font: 400 12px var(--sans); color: var(--text-3); margin-bottom: 2px; }
+  .rows { display: grid; gap: 10px; margin-top: 12px; }
+  .row { display: grid; grid-template-columns: 1fr 52px; gap: 4px 12px; font-size: 13px; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; }
+  .row .val { font: 400 12px var(--mono); color: var(--text-2); text-align: right; font-variant-numeric: tabular-nums; }
+  .row .track { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--sunk); }
+  .row .track i { display: block; height: 100%; border-radius: 2px; background: var(--text-3); transition: width .4s var(--ease); }
+  .row.hot .track i { background: var(--ink); }
+  .row:hover .name { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line-2); }
+  .rhythm .row { cursor: default; }
+  .rhythm .row.flat .name { color: var(--ink-dark); }
+  .rhythm svg { grid-column: 1 / -1; width: 100%; height: 12px; display: block; }
+  .axis { display: flex; justify-content: space-between; font: 400 11px var(--mono); color: var(--text-3); }
+  .note { font-size: 12px; color: var(--text-3); margin-top: 8px; }
+  details.skipped { font-size: 13px; color: var(--text-3); border-top: 1px solid var(--line); padding-top: 16px; }
+  details.skipped summary { cursor: pointer; }
+  details.skipped ol { margin-top: 12px; padding-left: 20px; display: grid; gap: 2px; max-height: 280px; overflow: auto; font: 400 11px/1.5 var(--mono); }
+
+  .main { padding: 28px 40px 64px; min-width: 0; }
+  .main-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .file { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meta { font: 400 12px var(--mono); color: var(--text-3); white-space: nowrap; }
+  .strip { display: flex; gap: 2px; margin-top: 16px; height: 32px; }
+  .strip button { border: 0; padding: 0; border-radius: 3px; cursor: pointer; min-width: 4px; background: var(--sunk); transition: background-color .4s var(--ease), opacity .4s var(--ease); }
+  .strip button.scored { background: color-mix(in oklab, var(--ink) calc(var(--s) * 100%), #e7e5e1); opacity: calc(.35 + var(--s) * .65); }
+  .strip button:hover { outline: 1px solid var(--text-3); }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--line); align-items: center; }
+  .seg { display: inline-flex; background: var(--sunk); border-radius: 8px; padding: 2px; }
+  .seg button { font: 500 12px var(--sans); border: 0; background: none; color: var(--text-2); height: 28px; padding: 0 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(28,27,25,.08); }
+  .thr { margin-left: auto; font: 400 12px var(--mono); color: var(--text-3); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .thr input { accent-color: var(--ink); width: 112px; }
+  .prog { margin-top: 16px; display: grid; gap: 8px; }
+  .prog .line { display: flex; justify-content: space-between; font: 400 12px var(--mono); color: var(--text-3); }
+  .prog .track { height: 4px; background: var(--sunk); border-radius: 2px; }
+  .prog .track i { display: block; height: 100%; width: 0; background: var(--text); border-radius: 2px; transition: width .3s var(--ease); }
+
+  .chunk { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 64px; }
+  .chunk .m { position: relative; font: 500 12px var(--mono); font-variant-numeric: tabular-nums; color: var(--text-3); padding: 2px 12px 0 0; text-align: right; }
+  .chunk .m::after { content: ""; position: absolute; right: 0; top: 4px; bottom: 4px; width: 3px; border-radius: 2px; background: color-mix(in oklab, var(--ink) calc(var(--s, 0) * 100%), #e2e0dc); }
+  .chunk.hot .m { color: var(--ink-dark); }
+  .chunk .sec { font-size: 12px; color: var(--text-3); margin-bottom: 4px; }
+  .chunk p { font-size: 14px; line-height: 1.7; max-width: 72ch; white-space: pre-wrap; }
+  .chunk.hot p { background: color-mix(in oklab, var(--ink) calc(max(var(--s) - .4, .04) * 18%), transparent); }
+  .chunk.flash { animation: flash 1.2s var(--ease); }
+  @keyframes flash { from { background: #fdf0e8; } to { background: transparent; } }
+  .copy { margin-top: 8px; font: 500 12px var(--sans); color: var(--text-2); background: none; border: 1px solid var(--line-2); border-radius: 6px; height: 24px; padding: 0 8px; cursor: pointer; transition: background-color .2s var(--ease); }
+  .copy:hover { background: var(--sunk); }
+  .chunk:not(.hot) .copy { display: none; }
+  .text.only-flagged .chunk:not(.hot) { display: none; }
+  .sk { height: 10px; border-radius: 4px; margin-top: 10px; background: linear-gradient(90deg, var(--sunk), #f7f6f4, var(--sunk)); background-size: 200% 100%; animation: sh 1.6s linear infinite; }
+  @keyframes sh { to { background-position: -200% 0; } }
+  .ph { color: var(--text-3); }
+
+  @media (max-width: 860px) {
+    .start, .app { grid-template-columns: 1fr; }
+    .start { padding: 40px 16px; gap: 32px; }
+    .side { border-right: 0; border-bottom: 1px solid var(--line); }
+    .main { padding: 24px 16px 48px; }
+    .thr { margin-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><i></i>VerifAI</div>
+  <div class="bar-right">
+    <span id="status"><span class="dot"></span>Connecting</span>
+    <button class="btn" id="new" hidden>New file</button>
+  </div>
+</header>
+
+<main class="start" id="start">
+  <div>
+    <h1>Check a report for AI&#8209;like passages</h1>
+    <p class="lede">Scores each section of a PDF with the desklib academic detector and marks the passages it flags. The model runs on this computer, nothing is uploaded.</p>
+    <ul>
+      <li>Figures, tables, references and the title block are skipped</li>
+      <li>Scores are AI-likelihood, not proof of authorship</li>
+      <li>About 5 seconds per page on a laptop CPU</li>
+    </ul>
+  </div>
+  <div>
+    <div class="drop" id="drop">
+      <span class="big">Drop a PDF here</span>
+      <p>Text PDFs up to 50 pages</p>
+      <button class="btn primary" id="pick" disabled>Choose file</button>
+      <input type="file" id="file" accept="application/pdf,.pdf" hidden>
+    </div>
+    <div class="paste">
+      <label for="pasted">Or paste text</label>
+      <textarea id="pasted" placeholder="Paste a paragraph or a full report"></textarea>
+      <div><button class="btn" id="check" disabled>Check text</button></div>
+    </div>
+    <div class="err" id="err" hidden></div>
+  </div>
+</main>
+
+<div class="app" id="app" hidden>
+  <aside class="side">
+    <div>
+      <div class="seg" id="modelSeg" role="group" aria-label="Model shown" hidden style="margin-bottom:20px">
+        <button aria-pressed="true" data-k="score">Desklib academic</button><button aria-pressed="false" data-k="score2">GPTTrace</button>
+      </div>
+      <div class="label">AI-likelihood, whole text</div>
+      <div class="score" id="score">–</div>
+      <div class="gauge"><i id="gauge" style="width:0"></i><b id="gmark"></b></div>
+      <div class="legend3"><span>Human</span><span id="thrLabel">0.50</span><span>AI</span></div>
+      <p class="verdict" id="verdict">Scoring…</p>
+      <p class="note" id="other" hidden></p>
+    </div>
+    <div>
+      <div class="label">Where the words fall</div>
+      <div class="split"><i class="lo" id="sLo"></i><i class="mid" id="sMid"></i><i class="hi" id="sHi"></i></div>
+      <div class="split-legend"><span><b id="pLo">–</b>Below 0.4</span><span><b id="pMid">–</b>Borderline</span><span><b id="pHi">–</b>Above 0.6</span></div>
+    </div>
+    <div class="facts">
+      <div><span>Words scored</span><b id="fWords">–</b></div>
+      <div><span>Passages</span><b id="fPass">–</b></div>
+      <div><span>Run time</span><b id="fTime">–</b></div>
+      <div><span>Model weights</span><b id="fMem">–</b></div>
+    </div>
+    <div>
+      <div class="label">By section</div>
+      <div class="rows" id="sections"></div>
+    </div>
+    <div class="rhythm" id="rhythmBox">
+      <div class="label">Sentence rhythm, words per sentence</div>
+      <div class="rows" id="rhythm"></div>
+      <div class="axis" style="margin-top:8px"><span>0</span><span>30</span><span>60+ words</span></div>
+      <p class="note">Flat rhythm (σ under 7) often reads as AI. Plain text stats, not used by the model.</p>
+    </div>
+    <details class="skipped" id="skipped"><summary></summary><ol></ol></details>
+  </aside>
+
+  <section class="main">
+    <div class="main-head"><span class="file" id="fname"></span><span class="meta" id="fmeta"></span></div>
+    <div class="strip" id="strip" aria-label="Document map, one cell per passage"></div>
+    <div class="legend3"><span>Start</span><span>Document map, click a cell to jump</span><span>End</span></div>
+    <div class="prog" id="prog">
+      <div class="line"><span id="progText">Preparing</span><span id="progTime">0:00</span></div>
+      <div class="track"><i id="progBar"></i></div>
+    </div>
+    <div class="controls">
+      <div class="seg" id="filterSeg" role="group" aria-label="Filter passages">
+        <button aria-pressed="true" data-f="all">All passages</button><button aria-pressed="false" data-f="flagged">Flagged only</button>
+      </div>
+      <label class="thr">Flag above <input type="range" id="thr" min="0.05" max="0.95" step="0.05" value="0.5"> <span id="thrVal">0.50</span></label>
+    </div>
+    <div class="text" id="text"></div>
+  </section>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmtPct = x => (x * 100).toFixed(1) + "%";
+const fmtTime = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let ready = false, run = null, K = "score";   // K: which model drives the visuals
+const NAMES = { score: "Desklib academic", score2: "GPTTrace" };
+const other = () => (K === "score" ? "score2" : "score");
+
+// ---- model status
+async function poll() {
+  try {
+    const s = await (await fetch("/status")).json();
+    const label = s.status === "ready" ? (s.second ? "Desklib + GPTTrace on CPU" : "academic-v1.01 on CPU") : s.status === "error" ? s.msg : "Loading model (first run downloads 1.7 GB)";
+    $("status").innerHTML = `<span class="dot ${s.status}"></span>${esc(label)}`;
+    ready = s.status === "ready";
+    $("pick").disabled = $("check").disabled = !ready;
+    if (s.status === "loading") setTimeout(poll, 1500);
+  } catch { $("status").innerHTML = `<span class="dot error"></span>Server not running`; setTimeout(poll, 3000); }
+}
+poll();
+
+// ---- input
+const showErr = msg => { $("err").textContent = msg; $("err").hidden = !msg; };
+$("pick").onclick = () => $("file").click();
+$("file").onchange = e => e.target.files[0] && sendPdf(e.target.files[0]);
+const drop = $("drop");
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) sendPdf(f); });
+$("check").onclick = () => {
+  const t = $("pasted").value.trim();
+  if (t.split(/\s+/).length < 20) return showErr("Paste at least 20 words. Short text gives unreliable scores.");
+  analyze(JSON.stringify({ text: t }), { "Content-Type": "application/json" }, "Pasted text");
+};
+function sendPdf(f) {
+  if (!ready) return;
+  if (!/\.pdf$/i.test(f.name) && f.type !== "application/pdf") return showErr("Choose a PDF file.");
+  analyze(f, { "Content-Type": "application/pdf", "X-Filename": encodeURIComponent(f.name) }, f.name);
+}
+$("new").onclick = () => { run?.ctrl.abort(); run = null; $("app").hidden = true; $("start").hidden = false; $("new").hidden = true; $("file").value = ""; showErr(""); };
+
+// ---- run
+async function analyze(body, headers, name) {
+  showErr("");
+  const ctrl = new AbortController();
+  let res;
+  try { res = await fetch("/analyze", { method: "POST", body, headers, signal: ctrl.signal }); }
+  catch { return showErr("Server not reachable. Is app.py running?"); }
+  if (!res.ok) { let m = "Something went wrong."; try { m = (await res.json()).error; } catch {} return showErr(m); }
+
+  run = { ctrl, meta: null, passages: [], t0: Date.now(), done: false, name: decodeURIComponent(name) };
+  $("start").hidden = true; $("app").hidden = false; $("new").hidden = false;
+  $("fname").textContent = run.name; $("text").innerHTML = ""; $("strip").innerHTML = "";
+  $("prog").hidden = false; $("progBar").style.width = "0";
+  const timer = setInterval(() => { if (run && !run.done) { const s = (Date.now() - run.t0) / 1000; $("progTime").textContent = fmtTime(s); $("fTime").textContent = fmtTime(s); } }, 500);
+
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = "";
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf("\n")) >= 0) { handle(JSON.parse(buf.slice(0, nl))); buf = buf.slice(nl + 1); }
+    }
+  } catch (e) { if (e.name !== "AbortError") $("progText").textContent = "Connection lost. Partial results shown."; }
+  clearInterval(timer);
+}
+
+function handle(m) {
+  if (m.type === "meta") {
+    run.meta = m;
+    $("fmeta").textContent = (m.pages ? `${m.pages} pages · ` : "") + `${m.raw_words.toLocaleString()} words`;
+    $("fPass").textContent = m.passages;
+    $("progText").textContent = `Scoring passage 1 of ${m.passages}`;
+    $("fMem").textContent = `${m.mem_gb} GB`;
+    $("text").innerHTML = Array.from({ length: m.passages }, (_, i) => `<div class="chunk" id="c${i}"><div class="m">…</div><div><div class="sk" style="width:92%"></div><div class="sk" style="width:78%"></div><div class="sk" style="width:85%"></div></div></div>`).join("");
+    $("strip").innerHTML = Array.from({ length: m.passages }, (_, i) => `<button id="s${i}" style="flex:1" aria-label="Passage ${i + 1}"></button>`).join("");
+    $("modelSeg").hidden = !m.second;
+    if (!m.second) setModel("score");
+    renderRhythm(m.rhythm);
+    const sk = $("skipped");
+    sk.querySelector("summary").textContent = `Skipped ${m.skipped.length} lines: figure and table text, references, title block. Show`;
+    sk.querySelector("ol").innerHTML = m.skipped.map(l => `<li>${esc(l)}</li>`).join("");
+    sk.hidden = !m.skipped.length;
+  } else if (m.type === "passage") {
+    run.passages[m.i] = m;
+    paint(m);
+    const n = run.passages.filter(Boolean).length;
+    $("progText").textContent = `Scoring passage ${Math.min(n + 1, run.meta.passages)} of ${run.meta.passages}`;
+    $("progBar").style.width = (n / run.meta.passages * 100) + "%";
+    update();
+  } else if (m.type === "done") {
+    run.done = true;
+    $("prog").hidden = true;
+    $("fTime").textContent = fmtTime(m.seconds);
+  }
+}
+
+// ---- one passage, painted with the selected model's score
+function paint(p) {
+  const s = p[K], o = p[other()], c = $("c" + p.i), cell = $("s" + p.i);
+  const second = o == null ? "" : ` · ${NAMES[other()]} ${o.toFixed(2)}`;
+  c.style.setProperty("--s", s);
+  c.innerHTML = `<div class="m">${s.toFixed(2)}</div><div><div class="sec">${esc(p.section)}${second}</div><p>${esc(p.text)}</p><button class="copy">Copy passage</button></div>`;
+  cell.style.flex = p.tokens; cell.style.setProperty("--s", s); cell.classList.add("scored");
+  cell.title = `${p.section}: ${s.toFixed(2)}`;
+}
+
+function setModel(k) {
+  K = k;
+  document.querySelectorAll("#modelSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
+  if (run) { run.passages.filter(Boolean).forEach(paint); update(); }
+}
+$("modelSeg").onclick = e => { const b = e.target.closest("button"); if (b) setModel(b.dataset.k); };
+
+const weighted = (ps, k) => ps.reduce((a, p) => a + p[k] * p.tokens, 0) / ps.reduce((a, p) => a + p.tokens, 0);
+
+// ---- derived numbers, recomputed live and on threshold or model change
+function update() {
+  if (!run) return;
+  const thr = +$("thr").value, ps = run.passages.filter(Boolean);
+  $("thrVal").textContent = $("thrLabel").textContent = thr.toFixed(2);
+  $("gmark").style.left = thr * 100 + "%";
+  ps.forEach(p => $("c" + p.i).classList.toggle("hot", p[K] >= thr));
+  if (!ps.length) return;
+  const overall = weighted(ps, K);
+  $("score").innerHTML = `${(overall * 100).toFixed(1)}<small>%</small>`;
+  $("gauge").style.width = overall * 100 + "%";
+  const flagged = ps.filter(p => p[K] >= thr).length;
+  const v = overall < .3 ? "Reads as human-written" : overall < .5 ? "Mostly reads as human-written" : overall < .7 ? "Mixed, parts read as AI-written" : "Reads as AI-written";
+  $("verdict").textContent = `${v}. ${flagged} of ${ps.length} passage${ps.length === 1 ? "" : "s"} score at or above ${thr.toFixed(2)}.`;
+  const hasOther = ps[0][other()] != null;
+  $("other").hidden = !hasOther;
+  if (hasOther) {
+    const o = weighted(ps, other());
+    $("other").textContent = `${NAMES[other()]} gives ${(o * 100).toFixed(1)}%. ` + ((o >= .5) === (overall >= .5) ? "Both models agree." : "The models disagree, so treat this result as uncertain.");
+  }
+
+  const words = ps.reduce((a, p) => a + p.words, 0);
+  const band = (lo, hi) => ps.filter(p => p[K] >= lo && p[K] < hi).reduce((a, p) => a + p.words, 0) / words;
+  const lo = band(0, .4), mid = band(.4, .6), hi = band(.6, 1.01);
+  [["sLo", "pLo", lo], ["sMid", "pMid", mid], ["sHi", "pHi", hi]].forEach(([bar, lab, x]) => { $(bar).style.flexGrow = x; $(lab).textContent = fmtPct(x); });
+  $("fWords").textContent = words.toLocaleString();
+
+  const secs = {};
+  ps.forEach(p => { const s = secs[p.section] ??= { name: p.section, w: 0, t: 0, first: p.i }; s.w += p[K] * p.tokens; s.t += p.tokens; s.first = Math.min(s.first, p.i); });
+  $("sections").innerHTML = Object.values(secs).map(s => ({ ...s, v: s.w / s.t })).sort((a, b) => b.v - a.v)
+    .map(s => `<button class="row ${s.v >= thr ? "hot" : ""}" data-i="${s.first}"><span class="name">${esc(s.name)}</span><span class="val">${s.v.toFixed(2)}</span><span class="track"><i style="width:${s.v * 100}%"></i></span></button>`).join("");
+}
+
+function renderRhythm(list) {
+  $("rhythmBox").hidden = !list.length;
+  // ponytail: fixed sigma < 7 cut-off for "flat", tune if it flags too much or too little
+  $("rhythm").innerHTML = [...list].sort((a, b) => a.sigma - b.sigma).map(r => {
+    const flat = r.sigma < 7;
+    const dots = r.lengths.map(n => `<circle cx="${Math.min(n, 60) / 60 * 232 + 4}" cy="6" r="3"/>`).join("");
+    return `<div class="row ${flat ? "flat" : ""}"><span class="name">${esc(r.section)}</span><span class="val">σ ${r.sigma}</span><svg viewBox="0 0 240 12" aria-hidden="true"><line x1="0" y1="6" x2="240" y2="6" stroke="rgba(28,27,25,.08)"/><g fill="${flat ? "#c2410c" : "#5c5a55"}" fill-opacity="${flat ? .45 : .3}">${dots}</g></svg></div>`;
+  }).join("");
+}
+
+// ---- interactions
+function jump(i) { const c = $("c" + i); if (!c) return; c.scrollIntoView({ behavior: "smooth", block: "start" }); c.classList.remove("flash"); void c.offsetWidth; c.classList.add("flash"); }
+$("strip").onclick = e => { const b = e.target.closest("button"); if (b) jump(+b.id.slice(1)); };
+$("sections").onclick = e => { const b = e.target.closest("button"); if (b) jump(+b.dataset.i); };
+$("thr").oninput = update;
+$("filterSeg").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  document.querySelectorAll("#filterSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  $("text").classList.toggle("only-flagged", b.dataset.f === "flagged");
+};
+$("text").onclick = async e => {
+  const b = e.target.closest(".copy"); if (!b) return;
+  await navigator.clipboard.writeText(b.previousElementSibling.textContent);
+  b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy passage", 1500);
+};
+</script>
+</body>
+</html>

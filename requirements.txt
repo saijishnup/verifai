@@ -1,0 +1,11 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+transformers
+sentencepiece
+pypdf
+onnxruntime
+
+# Models are not in this repo. After installing, download them into models/ (about 1.9 GB):
+#   hf download desklib/ai-text-detector-academic-v1.01 --local-dir models/academic-v1.01
+#   hf download nakas/gpttrace-ettin150-text-v5e --local-dir models/gpttrace-150m   (optional second opinion)
+# If models/academic-v1.01 is missing, app.py downloads Desklib on first run instead.
