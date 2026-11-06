@@ -74,7 +74,7 @@ Requires Python 3.12+ and approximately 4 GB of disk space.
 git clone https://github.com/saijishnup/verifai.git
 cd verifai
 python -m venv .venv
-.venv\\Scripts\\activate            # macOS / Linux: source .venv/bin/activate
+.venv\Scripts\activate            # macOS / Linux: source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
