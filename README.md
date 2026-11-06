@@ -17,29 +17,31 @@
 
 ## What it is
 
-Checks a PDF report for passages an AI-text detector would flag, before you submit. Scores the whole report, each section and each passage, and marks them in the margin. Runs on your laptop; the PDF never leaves it.
+VerifAI checks PDF reports for passages that AI-text detectors may flag. It scores the document, sections, and passages, then marks them in the margin.
+
+Everything runs locally; PDFs never leave your computer.
 
 ## Features
 
-- **Two detectors.** Desklib academic and GPTTrace. One switch flips every chart; a line says if they agree.
-- **Margin heatmap.** Each passage gets a mark tinted by score. Flagged ones get a Copy button to rewrite and re-check.
-- **Section bars.** Sections ranked by score. Click to jump.
-- **Document map.** One cell per passage, start to end.
-- **Word split.** Share of text scoring low, borderline, high.
-- **Sentence rhythm.** Words per sentence per section. Flat rhythm often reads as AI. Plain stats, not the model.
-- **Threshold slider.** 0.05 to 0.95, re-tints instantly.
-- **Live results.** Passages fill in as scored.
-- **Paste mode.** Check one paragraph, no PDF.
-- **Cleanup.** Drops tables, figure labels, captions, page numbers, title block and references. "Show skipped" lists what went.
+- **Two detectors:** Desklib Academic and GPTTrace.
+- **Margin heatmap:** Score each passage and rewrite flagged text for re-checking.
+- **Section bars:** Rank sections and jump between them.
+- **Document map:** View every passage from start to finish.
+- **Word split:** Compare low, borderline, and high-scoring text.
+- **Sentence rhythm:** Inspect words per sentence by section.
+- **Threshold slider:** Adjust from 0.05 to 0.95.
+- **Live results:** Scores appear as passages finish.
+- **Paste mode:** Check a paragraph without uploading a PDF.
+- **Cleanup:** Removes tables, figure labels, captions, page numbers, title blocks, and references. Skipped content can be viewed.
 
 ## How it scores
 
 ```
 PDF ──► extract text (pypdf)
-    ──► drop tables, figure labels, captions, references, title block
-    ──► split by section, pack sentences into passages of ≤ 700 tokens
+    ──► remove tables, labels, captions, references, and title block
+    ──► split by section into passages of ≤ 700 tokens
     ──► score each passage with both detectors
-    ──► section and overall = token-weighted averages
+    ──► calculate token-weighted section and overall averages
 ```
 
 | | Desklib academic | GPTTrace (optional) |
@@ -52,9 +54,9 @@ PDF ──► extract text (pypdf)
 | RAM | ~1.9 GB | ~0.3 GB |
 | Licence | MIT | CC BY-SA 4.0 |
 
-*AI text caught at 5% false positives, all attacks. Most top entries trained on RAID data; real-world accuracy is lower.
+*AI text caught at 5% false positives across all attacks. Real-world accuracy is lower.
 
-**Memory.** Desklib's 128k-word embedding table is stored in bf16, the rest in fp32: −0.3 GB, score change 0.0001. Full bf16 was 8× slower on CPU; int8 broke the model (everything ~0.99).
+**Memory:** Desklib's embedding table uses bf16; the rest uses fp32. This saves 0.3 GB with a score change of 0.0001.
 
 ### Measured on a 17-page report
 
@@ -66,37 +68,37 @@ PDF ──► extract text (pypdf)
 
 ## Run it locally
 
-Needs Python 3.12+ and ~4 GB disk.
+Requires Python 3.12+ and approximately 4 GB of disk space.
 
 ```bash
 git clone https://github.com/saijishnup/verifai.git
 cd verifai
 python -m venv .venv
-.venv\Scripts\activate            # macOS / Linux: source .venv/bin/activate
+.venv\\Scripts\\activate            # macOS / Linux: source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Download models (~1.9 GB, once):
+Download the models once:
 
 ```bash
 hf download desklib/ai-text-detector-academic-v1.01 --local-dir models/academic-v1.01
 hf download nakas/gpttrace-ettin150-text-v5e --local-dir models/gpttrace-150m
 ```
 
-Second line optional: without it, Desklib only. Skip both and Desklib downloads on first run.
+GPTTrace is optional. Without it, VerifAI uses Desklib only. If both models are skipped, Desklib downloads on first run.
 
 ```bash
 python app.py
 ```
 
-Opens http://127.0.0.1:8000. Model loads in 15–30 s; upload unlocks when ready.
+Open http://127.0.0.1:8000. The model loads in 15–30 seconds.
 
 | Option | Does |
 |---|---|
 | `--fp32` | Full fp32 Desklib (+0.35 GB RAM) |
-| `--port 8001` | Another port |
-| `--no-browser` | No browser tab |
-| `--selftest` | Test the text pipeline, no model |
+| `--port 8001` | Use another port |
+| `--no-browser` | Do not open a browser tab |
+| `--selftest` | Test the text pipeline without loading a model |
 
 ```
 verifai/
@@ -108,27 +110,25 @@ verifai/
 
 ## What the score means
 
-AI-likelihood from a detector, not proof of authorship.
+The score is an AI-likelihood estimate, not proof of authorship.
 
-- Low score: no AI style found. Edited or paraphrased AI text can also score low.
-- Formal technical prose can score high even when human-written.
-- Two detectors agreeing beats one. VerifAI flags disagreement.
-- Studies show commercial detectors flag 9–15% of real human abstracts. Never use a score alone to accuse anyone.
+- Low scores do not rule out edited or paraphrased AI text.
+- Formal technical writing can score high when written by humans.
+- Agreement between both detectors is more useful than one score.
+- Commercial detectors have flagged 9–15% of real human abstracts. Never rely on a score alone.
 
 ## Privacy
 
-Runs on 127.0.0.1 only. PDFs are read in memory, never saved. No accounts, cookies or analytics. Network use: one-time model downloads (Hugging Face) and fonts (Google Fonts).
+VerifAI runs on `127.0.0.1`. PDFs are read in memory and never saved. There are no accounts, cookies, or analytics.
 
-## Delete everything
-
-Stop with Ctrl+C, delete the folder. Frees ~3.5 GB.
-
+Network access is limited to model downloads from Hugging Face and fonts from Google Fonts.
+  
 ## Credits
 
 [Desklib](https://huggingface.co/desklib) · [GPTTrace by nakas](https://huggingface.co/nakas/gpttrace-ettin150-text-v5e) · [RAID benchmark](https://github.com/liamdugan/raid)
 
 ## License
 
-[MIT](LICENSE) © 2026 Sai Jishnu P. Models keep their own licences (Desklib MIT, GPTTrace CC BY-SA 4.0) and download from Hugging Face; not redistributed here.
+[MIT](LICENSE) © 2026 Sai Jishnu P. Models retain their own licences: Desklib MIT and GPTTrace CC BY-SA 4.0.
 
 VerifAI is a second reader, not a judge.
